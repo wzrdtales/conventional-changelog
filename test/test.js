@@ -632,6 +632,22 @@ describe('conventionalChangelog', function() {
     });
   });
 
+  it('should error if there is an error in `options.transform`', function(done) {
+    conventionalChangelog({
+      pkg: {
+        path: __dirname + '/fixtures/_short.json',
+        transform: function() {
+          undefined.a = 10;
+        }
+      }
+    })
+      .on('error', function(err) {
+        expect(err.message).to.include('Error in options.pkg.transform:');
+
+        done();
+      });
+  });
+
   it('should error if it errors in git-raw-commits', function(done) {
     conventionalChangelog({}, {}, {
       unknowOptions: false

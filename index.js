@@ -2,11 +2,13 @@
 var conventionalCommitsParser = require('conventional-commits-parser');
 var conventionalChangelogWriter = require('conventional-changelog-writer');
 var dateFormat = require('dateformat');
-var fs = require('fs');
 var getPkgRepo = require('get-pkg-repo');
 var gitRawCommits = require('git-raw-commits');
 var gitSemverTags = require('git-semver-tags');
+var promiseToCallback = require('promise-to-callback');
 var Q = require('q');
+var readPkg = require('read-pkg');
+var readPkgUp = require('read-pkg-up');
 var stream = require('stream');
 var through = require('through2');
 var url = require('url');
@@ -71,7 +73,11 @@ function conventionalChangelog(options, context, gitRawCommitsOpts, parserOpts, 
     }
   }
 
-  pkgPromise = Q.nfcall(fs.readFile, options.pkg.path, 'utf8');
+  if (options.pkg.path) {
+    pkgPromise = Q.nfcall(promiseToCallback(readPkg(options.pkg.path)));
+  } else {
+    pkgPromise = Q.nfcall(promiseToCallback(readPkgUp()));
+  }
 
   semverTagsPromise = Q.nfcall(gitSemverTags);
 
@@ -98,7 +104,6 @@ function conventionalChangelog(options, context, gitRawCommitsOpts, parserOpts, 
       if (pkgObj.state === 'fulfilled') {
         pkg = pkgObj.value;
         try {
-          pkg = JSON.parse(pkg);
           pkg = options.pkg.transform(pkg);
           context.version = context.version || pkg.version;
           context.packageData = pkg;
